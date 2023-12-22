@@ -123,15 +123,15 @@
                             {% if data_dict %}
                                 <tr>
                                     <td>{{ forloop.counter }}</td>
-                                    <!-- First dictionary (DA1) -->
+                                    
                                     <td>{{ data_dict.PRODUCTION }}</td>
-                                    <td>{{ data_dict.l1_emp }}</td>
-                                    <td>{{ data_dict.filename }}</td>
-                                    <td>{{ data_dict.l1_loc }}</td>
-                                    <td>{{ data_dict.l1_audited_count }}</td>
-                                    <td>{{ data_dict.l1_field_count }}</td>
-                                    <td>{{ data_dict.l1_total_error_count }}</td>
-                                    <td>{{ data_dict.l1_Accuracy }}</td>
+                                    <td>{{ data_dict.Employee_id }}</td>
+                                    <td>{{ data_dict.Employee_Name }}</td>
+                                    <td>{{ data_dict.Location }}</td>
+                                    <td>{{ data_dict.Audited_count }}</td>
+                                    <td>{{ data_dict.Field_count }}</td>
+                                    <td>{{ data_dict.Audited_count_wise_accuracy }}</td>
+                                    <td>{{ data_dict.field_count_wise_accuracy }}</td>
     
                                 </tr>
                             {% endif %}
