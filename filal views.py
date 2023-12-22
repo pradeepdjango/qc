@@ -2075,10 +2075,12 @@ def qualityreport(request):
             scope = request.POST.get('scope')
             key = request.POST.get('key')
             language_sl = request.POST.get('language')
-            
+            options = request.POST.get('options')
+
+            print(fromdate,todate,filename,location,scope,key,language_sl,options)
+
             raw_data_query = Q(l1_status="completed", l2_status="completed", l3_status="completed")
 
-           
             if filename != "ALL":
                 
                 raw_data_query &= Q(baseid__filename=filename)
@@ -2186,7 +2188,6 @@ def qualityreport(request):
                     'l3_prod__que10_ans2',
                     'l3_prod__que11_ans2',
                     'l3_prod__q12_ans2')
-
             
             result_df = pd.DataFrame()
             
@@ -2197,7 +2198,6 @@ def qualityreport(request):
                     fromfun = userwisequalityreportDA1(row)
                     
                     result_df = pd.concat([result_df, fromfun], ignore_index=True)
-                    
                     
                 elif scope == 'DA2':
 
@@ -2211,28 +2211,75 @@ def qualityreport(request):
 
                     result_df = pd.concat([result_df, fromfun1], ignore_index=True)
                     
-                    
                     fromfun2 = userwisequalityreportDA2(row)
                 
                     result_df = pd.concat([result_df, fromfun2], ignore_index=True)
             
-           
-
             if key == 'Download' :                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                               
-                    
-                    
+                    if options == 'USER':
 
-                    csv_data = result_df.to_csv(index=True, encoding='utf-8')
+                        csv_data = result_df.to_csv(index=True, encoding='utf-8')
 
-                    # Create HTTP response
-                    response = HttpResponse(csv_data, content_type='text/csv')
-                    response['Content-Disposition'] = 'attachment; filename="quality_report.csv"'
-                    return response
-            
+                        response = HttpResponse(csv_data, content_type='text/csv')
+                        response['Content-Disposition'] = 'attachment; filename="quality_report.csv"'
+                        return response
+                    
+                    elif  options == 'FIELD':
+                        rows = [
+                            '1_prod', '2_prod', '3_prod',
+                            '4_prod', '5_prod',
+                            '6_prod', '7_prod', '8_prod',
+                            '9_prod', '10_prod', '11_prod',
+                            '12_prod', '13_prod', '14_prod',
+                            '15_prod', '16_prod', '17_prod',
+                            '18_prod', '19_prodp', '20_prod',
+                            '21_prod', '22_prod', '23_prod'
+                        ]
+
+                        new_df = pd.DataFrame(rows, columns=['PRODUCTION'])
+
+                        new_df['Audited_count'] = result_df.apply(lambda row: row[:-2].eq(True).sum(), axis=1)
+                        new_df['Total_error'] = result_df.apply(lambda row: row[:-2].eq(False).sum(), axis=1)
+                        new_df['Field_count'] = new_df['Audited_count'] * 25
+                        new_df['Audited_count_wise_accuracy'] = (1 - (new_df['Total_error'] / new_df['Audited_count'])) * 100
+                        new_df['field_count_wise_accuracy'] = (1 - (new_df['Total_error'] / new_df['Field_count'])) * 100
+                        
+                        csv_data = new_df.to_csv(index=True, encoding='utf-8')
+
+                        response = HttpResponse(csv_data, content_type='text/csv')
+                        response['Content-Disposition'] = 'attachment; filename="quality_report.csv"'
+                        return response
+                    
             else :
-                    data_list = result_df.to_dict(orient='records')
-                    return render(request, 'pages/QualityReport.html', {'locations': locations, 'filenames': filenames,'language':language_list,'response_data_list':data_list})
-        
+                    
+                    if options == 'USER':
+
+                        data_list = result_df.to_dict(orient='records')
+
+                        return render(request, 'pages/QualityReport.html', {'locations': locations, 'filenames': filenames,'language':language_list,'response_data_list':data_list})
+                    
+                    elif  options == 'FIELD':   
+                        rows = [
+                            '1_prod', '2_prod', '3_prod',
+                            '4_prod', '5_prod',
+                            '6_prod', '7_prod', '8_prod',
+                            '9_prod', '10_prod', '11_prod',
+                            '12_prod', '13_prod', '14_prod',
+                            '15_prod', '16_prod', '17_prod',
+                            '18_prod', '19_prodp', '20_prod',
+                            '21_prod', '22_prod', '23_prod'
+                        ]
+
+                        new_df = pd.DataFrame(rows, columns=['PRODUCTION'])
+
+                        new_df['Audited_count'] = result_df.apply(lambda row: row[:-2].eq(True).sum(), axis=1)
+                        new_df['Total_error'] = result_df.apply(lambda row: row[:-2].eq(False).sum(), axis=1)
+                        new_df['Field_count'] = new_df['Audited_count'] * 25
+                        new_df['Audited_count_wise_accuracy'] = (1 - (new_df['Total_error'] / new_df['Audited_count'])) * 100
+                        new_df['field_count_wise_accuracy'] = (1 - (new_df['Total_error'] / new_df['Field_count'])) * 100
+                        data_list = new_df.to_dict(orient='records')
+                        return render(request, 'pages/QualityReport.html', {'locations': locations, 'filenames': filenames,'language':language_list,'data_list2':data_list})
+
         except Exception as e:
             return render(request, 'pages/QualityReport.html', {'locations': locations, 'filenames': filenames,'language':language_list})
 
