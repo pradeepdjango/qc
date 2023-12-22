@@ -2230,7 +2230,8 @@ def qualityreport(request):
                     return response
             
             else :
-                    return render(request, 'pages/QualityReport.html', {'locations': locations, 'filenames': filenames,'language':language_list,'response_data_list':result_df})
+                    data_list = result_df.to_dict(orient='records')
+                    return render(request, 'pages/QualityReport.html', {'locations': locations, 'filenames': filenames,'language':language_list,'response_data_list':data_list})
         
         except Exception as e:
             return render(request, 'pages/QualityReport.html', {'locations': locations, 'filenames': filenames,'language':language_list})
@@ -2290,10 +2291,14 @@ def userwisequalityreportDA1(userid):
                 'l3_prod__que10_ans1', 'l3_prod__que11_ans1', 'l3_prod__q12_ans1',
                 'l3_prod__que4_ans2', 'l3_prod__que5_ans2', 'l3_prod__que6_ans2',
                 'l3_prod__que7_ans2', 'l3_prod__que8_ans2', 'l3_prod__que9_ans2',
-                'l3_prod__que10_ans2', 'l3_prod__que11_ans2', 'l3_prod__q12_ans2'
+                'l3_prod__que10_ans2', 'l3_prod__que11_ans2', 'l3_prod__q12_ans2','l2_emp__employeeID','l2_emp__employeeName','l2_loc'
             ]
 
             df_report = df_report.drop(columns=columns_to_remove)
+
+            new_column_names = {'l1_emp__employeeID': 'Employee_id', 'l1_emp__employeeName': 'Employee_Name','l1_loc':'Location'}
+
+            df_report.rename(columns=new_column_names, inplace=True)
 
             df_report['Audited_count'] = df_report.apply(lambda row: row[:-2].eq(True).sum(), axis=1)
 
@@ -2302,9 +2307,9 @@ def userwisequalityreportDA1(userid):
 
             df_report['Field_count'] = df_report['Audited_count']*25
 
-            df_report['Audited_count_wise_accuracy%'] = (1 - (df_report['Total_error'] / df_report['Audited_count']))*100
+            df_report['Audited_count_wise_accuracy'] = (1 - (df_report['Total_error'] / df_report['Audited_count']))*100
 
-            df_report['field_count_wise_accuracy%'] = (1 - (df_report['Total_error'] / df_report['Field_count']))*100
+            df_report['field_count_wise_accuracy'] = (1 - (df_report['Total_error'] / df_report['Field_count']))*100
             
             return df_report
 
@@ -2362,10 +2367,14 @@ def userwisequalityreportDA2(userid):
                 'l3_prod__que10_ans1', 'l3_prod__que11_ans1', 'l3_prod__q12_ans1',
                 'l3_prod__que4_ans2', 'l3_prod__que5_ans2', 'l3_prod__que6_ans2',
                 'l3_prod__que7_ans2', 'l3_prod__que8_ans2', 'l3_prod__que9_ans2',
-                'l3_prod__que10_ans2', 'l3_prod__que11_ans2', 'l3_prod__q12_ans2'
+                'l3_prod__que10_ans2', 'l3_prod__que11_ans2', 'l3_prod__q12_ans2','l1_emp__employeeID','l1_emp__employeeName','l1_loc'
             ]
 
             df_report = df_report.drop(columns=columns_to_remove)
+
+            new_column_names = {'l2_emp__employeeID': 'Employee_id', 'l2_emp__employeeName': 'Employee_Name','l2_loc':'Location'}
+
+            df_report.rename(columns=new_column_names, inplace=True)
 
             df_report['Audited_count'] = df_report.apply(lambda row: row[:-2].eq(True).sum(), axis=1)
 
@@ -2374,8 +2383,8 @@ def userwisequalityreportDA2(userid):
 
             df_report['Field_count'] = df_report['Audited_count']*25
 
-            df_report['Audited_count_wise_accuracy%'] = (1 - (df_report['Total_error'] / df_report['Audited_count']))*100
+            df_report['Audited_count_wise_accuracy'] = (1 - (df_report['Total_error'] / df_report['Audited_count']))*100
 
-            df_report['field_count_wise_accuracy%'] = (1 - (df_report['Total_error'] / df_report['Field_count']))*100
+            df_report['field_count_wise_accuracy'] = (1 - (df_report['Total_error'] / df_report['Field_count']))*100
 
             return df_report
