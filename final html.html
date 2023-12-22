@@ -1,0 +1,197 @@
+{% extends "layouts/base.html" %}
+{% load static %}
+{% block title %} {% endblock %}
+
+<!-- Specific CSS goes HERE -->
+{% block stylesheets %}
+
+{% endblock stylesheets %}
+{% block content %}
+{% load tags %}
+<div class="grid-margin">
+    <div class="card shadow">
+        <div class="card-body">
+            <div class="row">
+                <div class="col-md-12 col-sm-12">
+                    <form class="row mb-2" action="{% url 'qualityreport' %}" method="POST">
+                        <input type="text" name="key" id="key" value="GetItem" style="display: none;">
+                        {% csrf_token %}
+
+
+                        <div class="col-md-2 col-sm-12">
+                            <label for="fromdate">From Date</label>
+                           
+                                <input type="date" name="fromdate" id="fromdate" class="form-control"
+                                    placeholder="From Date" required>
+                           
+                        </div>
+
+                        <div class="col-md-2 col-sm-12">
+                            <label for="todate">To Date</label>
+
+                                <input type="date" name="todate" id="todate" class="form-control"
+                                    placeholder="From Date" required>
+                           
+                        </div>
+
+                        <div class="col-md-2 col-sm-12">
+                            <label for="">language</label>
+
+                            <select class="form-control select-form" name="language" id="language"
+                                style="border: 1px solid black;color: black;" required>
+                                <option value="">-- select --</option>
+                                <option value="ALL">ALL</option>
+                                {% for f in language %}
+                                <option value="{{ f}}">{{ f}}</option>
+                                {% endfor %}                                
+                            </select>
+                        </div>
+
+                        <div class="col-md-2 col-sm-12">
+                            <label for="">File Name</label>
+
+                            <select class="form-control select-form" name="filename" id="filename"
+                                style="border: 1px solid black;color: black;" required>
+                                <option value="">-- select --</option>
+                                <option value="ALL">ALL</option>
+                                {% for f in filenames %}
+                                <option value="{{ f.baseid_id__filename}}">{{ f.baseid_id__filename}}</option>
+                                {% endfor %}                                
+                            </select>
+                        </div>
+                        <div class="col-md-2 col-sm-12">
+                            <label for="">Location</label>
+                            <select name="location" id="location" style="border: 1px solid black;color: black;"
+                                class="form-control select-form" required>
+                                <option value="">-- select --</option>
+                                <option value="ALL">ALL</option>
+                                {% for l in locations %}
+                                <option value="{{ l.location}}">{{ l.location}}</option>
+                                {% endfor %}
+                            </select>
+                        </div>           
+                        
+                        <div class="col-md-2 col-sm-12">
+                            <label for="">Scope </label>
+                            <select name="scope" id="scope" style="border: 1px solid black;color: black;"
+                                class="form-control select-form" required>
+                                <option value="">-- select --</option>
+                                <option value="ALL">ALL</option>
+                                <option value="DA1">DA1</option>
+                                <option value="DA2">DA2</option>
+                            </select>
+                        </div>  
+                        
+
+
+                        <div class="col-md-2 col-sm-12">
+                            <div class="mt-4">
+                                <button class="btn btn-sm btn-success" id="storebtn">Get</button>
+                            </div>
+                        </div>
+                    </form>
+                    <div class="col-md-2 col-sm-12">
+                        <div class="mt-4">
+                            <button  id="submitBtn" class="btn btn-info">Download as csv</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    <br>
+  
+    <div class="card shadow-sm">
+        <div class="card-body">
+            <div class="table-responsive" style="overflow-y: scroll;max-height: 65vh;">
+                <table class="table table-hover">
+                    <thead>
+                        <tr>
+                            <th>S.No</th>
+                            <th>Date</th>
+                            <th>Employee id</th>
+                            <th>Employee Name</th>
+                            <th>Audited Count</th>
+                            <th>Field count</th>
+                            <th>Total error count</th>
+                            <th>Acdited count with accuracy</th>
+                            <th>Field wise accuracy</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for data_dict in response_data_list %}
+                            {% if data_dict %}
+                                <tr>
+                                    <td>{{ forloop.counter }}</td>
+                                    <!-- First dictionary (DA1) -->
+                                    <td>{{ data_dict.PRODUCTION }}</td>
+                                    <td>{{ data_dict.l1_emp }}</td>
+                                    <td>{{ data_dict.filename }}</td>
+                                    <td>{{ data_dict.l1_loc }}</td>
+                                    <td>{{ data_dict.l1_audited_count }}</td>
+                                    <td>{{ data_dict.l1_field_count }}</td>
+                                    <td>{{ data_dict.l1_total_error_count }}</td>
+                                    <td>{{ data_dict.l1_Accuracy }}</td>
+    
+                                </tr>
+                            {% endif %}
+                        {% endfor %}
+                    </tbody>
+                </table>
+                
+            </div>
+        </div>
+    </div>
+   
+</div>
+<script src="{% static 'js/jquery_plugin.js' %}"></script>
+<!-- Add this in the <head> section of your HTML -->
+    <script src="https://code.jquery.com/jquery-3.6.4.min.js"></script>
+
+<script>
+    $("#storebtn").click(function () {
+        localStorage.setItem('from', $("#fromdate").val());
+        localStorage.setItem('to', $("#todate").val());
+        localStorage.setItem('language', $("#language").val());
+        localStorage.setItem('filename_q', $("#filename").val());
+        localStorage.setItem('location_q', $("#location").val());
+        localStorage.setItem('scope_q', $("#scope").val());
+    })
+
+    $("#submitBtn").click(function () {
+        
+        var formData = {
+            csrfmiddlewaretoken:'{{ csrf_token }}',
+            fromdate: localStorage.getItem('from'),
+            todate: localStorage.getItem('to'),
+            language: localStorage.getItem('language'),
+            filename: localStorage.getItem('filename_q'),
+            location: localStorage.getItem('location_q'),
+            scope: localStorage.getItem('scope_q'),
+            key: "Download"
+        };
+
+        // Send AJAX request
+        $.ajax({
+            type: "POST",
+            url: "/api/v5/qualityreport/",
+            data: formData,
+            // dataType: 'json',
+            success: function (response) {
+                var a = document.createElement('a');
+                a.href = 'data:attachment/csv,' + encodeURI(response);
+                a.target = '_blank';
+                a.download = 'template.csv';
+                document.body.appendChild(a);
+                a.click();
+                document.body.removeChild(a);
+            },
+            error: function (error) {
+                console.log(error);
+            }
+        });           
+    });
+   
+</script>
+
+{% endblock content %}
