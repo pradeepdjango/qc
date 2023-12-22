@@ -82,6 +82,15 @@
                             </select>
                         </div>  
                         
+                        <div class="col-md-2 col-sm-12">
+                            <label for="">form</label>
+                            <select name="options" id="options" style="border: 1px solid black;color: black;"
+                                class="form-control select-form" required>
+                                <option value="">-- select --</option>
+                                <option value="FIELD">FIELD WISE</option>
+                                <option value="USER">USER WISE</option>
+                            </select>
+                        </div>  
 
 
                         <div class="col-md-2 col-sm-12">
@@ -104,6 +113,7 @@
     <div class="card shadow-sm">
         <div class="card-body">
             <div class="table-responsive" style="overflow-y: scroll;max-height: 65vh;">
+                {% if response_data_list %}
                 <table class="table table-hover">
                     <thead>
                         <tr>
@@ -138,7 +148,37 @@
                         {% endfor %}
                     </tbody>
                 </table>
-                
+                {% endif %}
+                {% if data_list2 %}
+                    <table class="table table-hover">
+                        <thead>
+                            <tr>
+                                <th>S.No</th>
+                                <th>Questions</th>
+                                <th>Audited_count</th>
+                                <th>Total_error</th>
+                                <th>Field_count</th>
+                                <th>Audited_count_wise_accuracy</th>
+                                <th>field_count_wise_accuracy</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for data_dict in data_list2 %}
+                                {% if data_dict %}
+                                    <tr>
+                                        <td>{{ forloop.counter }}</td>    
+                                        <td>{{ data_dict.PRODUCTION }}</td>
+                                        <td>{{ data_dict.Audited_count }}</td>
+                                        <td>{{ data_dict.Total_error }}</td>
+                                        <td>{{ data_dict.Field_count }}</td>
+                                        <td>{{ data_dict.Audited_count_wise_accuracy }}</td>
+                                        <td>{{ data_dict.field_count_wise_accuracy }}</td>
+                                    </tr>
+                                {% endif %}
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                {% endif %}
             </div>
         </div>
     </div>
@@ -156,6 +196,7 @@
         localStorage.setItem('filename_q', $("#filename").val());
         localStorage.setItem('location_q', $("#location").val());
         localStorage.setItem('scope_q', $("#scope").val());
+        localStorage.setItem('options', $("#options").val());
     })
 
     $("#submitBtn").click(function () {
@@ -168,6 +209,7 @@
             filename: localStorage.getItem('filename_q'),
             location: localStorage.getItem('location_q'),
             scope: localStorage.getItem('scope_q'),
+            options: localStorage.getItem('options'),
             key: "Download"
         };
 
