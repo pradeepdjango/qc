@@ -1,0 +1,629 @@
+
+@loginrequired
+def qualityreport(request):
+
+    filenames = raw_data.objects.values('baseid_id__filename').distinct()
+    locations = userProfile.objects.filter(Q(location__isnull=False) & ~Q(location='')).values('location').distinct()
+    language =  userProfile.objects.filter(Q(language__isnull=False) & ~Q(language='')).values('language').distinct()
+
+    language_list = []
+    for item in language:
+        language_list.extend(ast.literal_eval(item['language']))
+    language_list = list(set(language_list))
+    
+    if request.method == 'POST':
+        try:
+            
+            fromdate = request.POST.get('fromdate')
+            todate = request.POST.get('todate')
+            filename = request.POST.get('filename')
+            location = request.POST.get('location')
+            scope = request.POST.get('scope')
+            key = request.POST.get('key')
+            language_sl = request.POST.get('language')
+            options = request.POST.get('options')
+
+            print(fromdate,todate,filename,location,scope,key,language_sl,options)
+
+            raw_data_query = Q(l1_status="completed", l2_status="completed", l3_status="completed")
+
+            if filename != "ALL":
+                
+                raw_data_query &= Q(baseid__filename=filename)
+
+            if location != "ALL":
+                
+                raw_data_query &= Q(Q(l1_loc=location) | Q(l2_loc=location))
+
+            if language_sl != "ALL":
+                
+                raw_data_query &= Q(baseid__language=[language_sl])
+            
+            raw_data_query &= Q(l1_prod__end_time__date__range=(fromdate, todate))
+            raw_data_query &= Q(l2_prod__end_time__date__range=(fromdate, todate))
+            raw_data_query &= Q(l3_prod__end_time__date__range=(fromdate, todate))
+            
+            raw_data_values = raw_data.objects.filter(raw_data_query).values('baseid__filename',
+                    'baseid__batch_name',         
+                    'l1_emp__employeeName',
+                    'l1_emp__employeeID',
+                    'l2_emp__employeeID',
+                    'l1_loc',
+                    'l2_emp__employeeName',
+                    'l2_loc',
+                    'id_value', 
+                    'question', 
+                    'asin', 
+                    'title', 
+                    'product_url', 
+                    'imagepath', 
+                    'evidence', 
+                    'answer_one', 
+                    'answer_two',
+                    'l1_status',
+                    'l2_status',
+                    'l4_status',
+                    'l3_status',
+                    'l1_l2_accuracy',
+                    'l1_prod__que1',
+                    'l1_prod__que2',
+                    'l1_prod__que2_1',
+                    'l1_prod__que3',
+                    'l1_prod__is_present_both',
+                    'l1_prod__que4_ans1',
+                    'l1_prod__que5_ans1', 
+                    'l1_prod__que6_ans1', 
+                    'l1_prod__que7_ans1',
+                    'l1_prod__que8_ans1',
+                    'l1_prod__que9_ans1',
+                    'l1_prod__que10_ans1',
+                    'l1_prod__que11_ans1',
+                    'l1_prod__q12_ans1',
+                    'l1_prod__que4_ans2',
+                    'l1_prod__que5_ans2',
+                    'l1_prod__que6_ans2',
+                    'l1_prod__que7_ans2',
+                    'l1_prod__que8_ans2',
+                    'l1_prod__que9_ans2',
+                    'l1_prod__que10_ans2',
+                    'l1_prod__que11_ans2',
+                    'l1_prod__q12_ans2',
+                    'l2_prod__que1',
+                    'l2_prod__que2',
+                    'l2_prod__que2_1',
+                    'l2_prod__que3',
+                    'l2_prod__is_present_both',
+                    'l2_prod__que4_ans1',
+                    'l2_prod__que5_ans1', 
+                    'l2_prod__que6_ans1', 
+                    'l2_prod__que7_ans1',
+                    'l2_prod__que8_ans1',
+                    'l2_prod__que9_ans1',
+                    'l2_prod__que10_ans1',
+                    'l2_prod__que11_ans1',
+                    'l2_prod__q12_ans1',
+                    'l2_prod__que4_ans2',
+                    'l2_prod__que5_ans2',
+                    'l2_prod__que6_ans2',
+                    'l2_prod__que7_ans2',
+                    'l2_prod__que8_ans2',
+                    'l2_prod__que9_ans2',
+                    'l2_prod__que10_ans2',
+                    'l2_prod__que11_ans2',
+                    'l2_prod__q12_ans2',
+                    'l3_prod__que1',
+                    'l3_prod__que2',
+                    'l3_prod__que2_1',
+                    'l3_prod__que3',
+                    'l3_prod__is_present_both',
+                    'l3_prod__que4_ans1',
+                    'l3_prod__que5_ans1', 
+                    'l3_prod__que6_ans1', 
+                    'l3_prod__que7_ans1',
+                    'l3_prod__que8_ans1',
+                    'l3_prod__que9_ans1',
+                    'l3_prod__que10_ans1',
+                    'l3_prod__que11_ans1',
+                    'l3_prod__q12_ans1',
+                    'l3_prod__que4_ans2',
+                    'l3_prod__que5_ans2',
+                    'l3_prod__que6_ans2',
+                    'l3_prod__que7_ans2',
+                    'l3_prod__que8_ans2',
+                    'l3_prod__que9_ans2',
+                    'l3_prod__que10_ans2',
+                    'l3_prod__que11_ans2',
+                    'l3_prod__q12_ans2')
+            
+            result_df = pd.DataFrame()
+            
+            for row in raw_data_values:
+                
+                if scope == 'DA1':
+                    
+                    fromfun = userwisequalityreportDA1(row)
+                    
+                    result_df = pd.concat([result_df, fromfun], ignore_index=True)
+                    
+                elif scope == 'DA2':
+
+                    fromfun = userwisequalityreportDA2(row)
+
+                    result_df = pd.concat([result_df, fromfun], ignore_index=True)
+                   
+                elif scope == 'ALL' :
+
+                    fromfun1 = userwisequalityreportDA1(row)
+
+                    result_df = pd.concat([result_df, fromfun1], ignore_index=True)
+                    
+                    fromfun2 = userwisequalityreportDA2(row)
+                
+                    result_df = pd.concat([result_df, fromfun2], ignore_index=True)
+            
+            if key == 'Download' :                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                               
+                    if options == 'USER':
+
+                        csv_data = result_df.to_csv(index=True, encoding='utf-8')
+
+                        response = HttpResponse(csv_data, content_type='text/csv')
+                        response['Content-Disposition'] = 'attachment; filename="quality_report.csv"'
+                        return response
+                    
+                    elif  options == 'FIELD':
+                        rows = [
+                            '1_prod', '2_prod', '3_prod',
+                            '4_prod', '5_prod',
+                            '6_prod', '7_prod', '8_prod',
+                            '9_prod', '10_prod', '11_prod',
+                            '12_prod', '13_prod', '14_prod',
+                            '15_prod', '16_prod', '17_prod',
+                            '18_prod', '19_prodp', '20_prod',
+                            '21_prod', '22_prod', '23_prod'
+                        ]
+
+                        new_df = pd.DataFrame(rows, columns=['PRODUCTION'])
+
+                        new_df['Audited_count'] = result_df.apply(lambda row: row[:-2].eq(True).sum(), axis=1)
+                        new_df['Total_error'] = result_df.apply(lambda row: row[:-2].eq(False).sum(), axis=1)
+                        new_df['Field_count'] = new_df['Audited_count'] * 25
+                        new_df['Audited_count_wise_accuracy'] = (1 - (new_df['Total_error'] / new_df['Audited_count'])) * 100
+                        new_df['field_count_wise_accuracy'] = (1 - (new_df['Total_error'] / new_df['Field_count'])) * 100
+                        
+                        csv_data = new_df.to_csv(index=True, encoding='utf-8')
+
+                        response = HttpResponse(csv_data, content_type='text/csv')
+                        response['Content-Disposition'] = 'attachment; filename="quality_report.csv"'
+                        return response
+                    
+            else :
+                    
+                    if options == 'USER':
+
+                        data_list = result_df.to_dict(orient='records')
+
+                        return render(request, 'pages/QualityReport.html', {'locations': locations, 'filenames': filenames,'language':language_list,'response_data_list':data_list})
+                    
+                    elif  options == 'FIELD':   
+                        rows = [
+                            '1_prod', '2_prod', '3_prod',
+                            '4_prod', '5_prod',
+                            '6_prod', '7_prod', '8_prod',
+                            '9_prod', '10_prod', '11_prod',
+                            '12_prod', '13_prod', '14_prod',
+                            '15_prod', '16_prod', '17_prod',
+                            '18_prod', '19_prodp', '20_prod',
+                            '21_prod', '22_prod', '23_prod'
+                        ]
+
+                        new_df = pd.DataFrame(rows, columns=['PRODUCTION'])
+
+                        new_df['Audited_count'] = result_df.apply(lambda row: row[:-2].eq(True).sum(), axis=1)
+                        new_df['Total_error'] = result_df.apply(lambda row: row[:-2].eq(False).sum(), axis=1)
+                        new_df['Field_count'] = new_df['Audited_count'] * 25
+                        new_df['Audited_count_wise_accuracy'] = (1 - (new_df['Total_error'] / new_df['Audited_count'])) * 100
+                        new_df['field_count_wise_accuracy'] = (1 - (new_df['Total_error'] / new_df['Field_count'])) * 100
+                        data_list = new_df.to_dict(orient='records')
+                        return render(request, 'pages/QualityReport.html', {'locations': locations, 'filenames': filenames,'language':language_list,'data_list2':data_list})
+
+        except Exception as e:
+            return render(request, 'pages/QualityReport.html', {'locations': locations, 'filenames': filenames,'language':language_list})
+
+    return render(request, 'pages/QualityReport.html', {'locations': locations, 'filenames': filenames,'language':language_list})
+
+def userwisequalityreportDA1(userid):
+         
+            df_report = pd.DataFrame([userid])
+                
+            df_report['PRODUCTION'] = 'DA1'
+            df_report['1_prod'] = (df_report['l1_prod__que1']==df_report['l3_prod__que1'])
+            df_report['2_prod'] = (df_report['l1_prod__que2']==df_report['l3_prod__que2'])
+            df_report['3_prod'] = (df_report['l1_prod__que2_1']==df_report['l3_prod__que2_1'])
+            df_report['4_prod'] = (df_report['l1_prod__que3']==df_report['l3_prod__que3'])
+            df_report['5_prod'] = (df_report['l1_prod__is_present_both']==df_report['l3_prod__is_present_both'])
+            df_report['6_prod'] = (df_report['l1_prod__que4_ans1']==df_report['l3_prod__que4_ans1'])
+            df_report['7_prod'] = (df_report['l1_prod__que5_ans1']==df_report['l3_prod__que5_ans1'])
+            df_report['8_prod'] = (df_report['l1_prod__que6_ans1']==df_report['l3_prod__que6_ans1'])
+            df_report['9_prod'] = (df_report['l1_prod__que7_ans1']==df_report['l3_prod__que7_ans1'])
+            df_report['10_prod'] = (df_report['l1_prod__que8_ans1']==df_report['l3_prod__que8_ans1'])
+            df_report['11_prod'] = (df_report['l1_prod__que9_ans1']==df_report['l3_prod__que9_ans1'])
+            df_report['12_prod'] = (df_report['l1_prod__que10_ans1']==df_report['l3_prod__que10_ans1'])
+            df_report['13_prod'] = (df_report['l1_prod__que11_ans1']==df_report['l3_prod__que11_ans1'])
+            df_report['14_prod'] = (df_report['l1_prod__q12_ans1']==df_report['l3_prod__q12_ans1'])
+            df_report['15_prod'] = (df_report['l1_prod__que4_ans2']==df_report['l3_prod__que4_ans2'])
+            df_report['16_prod'] = (df_report['l1_prod__que5_ans2']==df_report['l3_prod__que5_ans2'])
+            df_report['17_prod'] = (df_report['l1_prod__que6_ans2']==df_report['l3_prod__que6_ans2'])
+            df_report['18_prod'] = (df_report['l1_prod__que7_ans2']==df_report['l3_prod__que7_ans2'])
+            df_report['19_prod'] = (df_report['l1_prod__que8_ans2']==df_report['l3_prod__que8_ans2'])
+            df_report['20_prod'] = (df_report['l1_prod__que9_ans2']==df_report['l3_prod__que9_ans2'])
+            df_report['21_prod'] = (df_report['l1_prod__que10_ans2']==df_report['l3_prod__que10_ans2'])
+            df_report['22_prod'] = (df_report['l1_prod__que11_ans2']==df_report['l3_prod__que11_ans2'])
+            df_report['23_prod'] = (df_report['l1_prod__q12_ans2']==df_report['l3_prod__q12_ans2'])
+
+
+            columns_to_remove = [
+                'l1_status', 'l2_status', 'l4_status', 'l3_status', 'l1_l2_accuracy',
+                'l1_prod__que1', 'l1_prod__que2', 'l1_prod__que2_1', 'l1_prod__que3',
+                'l1_prod__is_present_both', 'l1_prod__que4_ans1', 'l1_prod__que5_ans1',
+                'l1_prod__que6_ans1', 'l1_prod__que7_ans1', 'l1_prod__que8_ans1',
+                'l1_prod__que9_ans1', 'l1_prod__que10_ans1', 'l1_prod__que11_ans1',
+                'l1_prod__q12_ans1', 'l1_prod__que4_ans2', 'l1_prod__que5_ans2',
+                'l1_prod__que6_ans2', 'l1_prod__que7_ans2', 'l1_prod__que8_ans2',
+                'l1_prod__que9_ans2', 'l1_prod__que10_ans2', 'l1_prod__que11_ans2',
+                'l1_prod__q12_ans2', 'l2_prod__que1', 'l2_prod__que2', 'l2_prod__que2_1',
+                'l2_prod__que3', 'l2_prod__is_present_both', 'l2_prod__que4_ans1',
+                'l2_prod__que5_ans1', 'l2_prod__que6_ans1', 'l2_prod__que7_ans1',
+                'l2_prod__que8_ans1', 'l2_prod__que9_ans1', 'l2_prod__que10_ans1',
+                'l2_prod__que11_ans1', 'l2_prod__q12_ans1', 'l2_prod__que4_ans2',
+                'l2_prod__que5_ans2', 'l2_prod__que6_ans2', 'l2_prod__que7_ans2',
+                'l2_prod__que8_ans2', 'l2_prod__que9_ans2', 'l2_prod__que10_ans2',
+                'l2_prod__que11_ans2', 'l2_prod__q12_ans2', 'l3_prod__que1',
+                'l3_prod__que2', 'l3_prod__que2_1', 'l3_prod__que3', 'l3_prod__is_present_both',
+                'l3_prod__que4_ans1', 'l3_prod__que5_ans1', 'l3_prod__que6_ans1',
+                'l3_prod__que7_ans1', 'l3_prod__que8_ans1', 'l3_prod__que9_ans1',
+                'l3_prod__que10_ans1', 'l3_prod__que11_ans1', 'l3_prod__q12_ans1',
+                'l3_prod__que4_ans2', 'l3_prod__que5_ans2', 'l3_prod__que6_ans2',
+                'l3_prod__que7_ans2', 'l3_prod__que8_ans2', 'l3_prod__que9_ans2',
+                'l3_prod__que10_ans2', 'l3_prod__que11_ans2', 'l3_prod__q12_ans2','l2_emp__employeeID','l2_emp__employeeName','l2_loc'
+            ]
+
+            df_report = df_report.drop(columns=columns_to_remove)
+
+            new_column_names = {'l1_emp__employeeID': 'Employee_id', 'l1_emp__employeeName': 'Employee_Name','l1_loc':'Location'}
+
+            df_report.rename(columns=new_column_names, inplace=True)
+
+            df_report['Audited_count'] = df_report.apply(lambda row: row[:-2].eq(True).sum(), axis=1)
+
+
+            df_report['Total_error'] = df_report.apply(lambda row: row[:-2].eq(False).sum(), axis=1)
+
+            df_report['Field_count'] = df_report['Audited_count']*25
+
+            df_report['Audited_count_wise_accuracy'] = (1 - (df_report['Total_error'] / df_report['Audited_count']))*100
+
+            df_report['field_count_wise_accuracy'] = (1 - (df_report['Total_error'] / df_report['Field_count']))*100
+            
+            return df_report
+
+def userwisequalityreportDA2(userid):
+
+            df_report = pd.DataFrame([userid])
+
+            # comparing l2 == l3
+            df_report['PRODUCTION'] = 'DA2'
+            df_report['1_prod'] = (df_report['l2_prod__que1']==df_report['l3_prod__que1'])
+            df_report['2_prod'] = (df_report['l2_prod__que2']==df_report['l3_prod__que2'])
+            df_report['3_prod'] = (df_report['l2_prod__que2_1']==df_report['l3_prod__que2_1'])
+            df_report['4_prod'] = (df_report['l2_prod__que3']==df_report['l3_prod__que3'])
+            df_report['5_prod'] = (df_report['l2_prod__is_present_both']==df_report['l3_prod__is_present_both'])
+            df_report['6_prod'] = (df_report['l2_prod__que4_ans1']==df_report['l3_prod__que4_ans1'])
+            df_report['7_prod'] = (df_report['l2_prod__que5_ans1']==df_report['l3_prod__que5_ans1'])
+            df_report['8_prod'] = (df_report['l2_prod__que6_ans1']==df_report['l3_prod__que6_ans1'])
+            df_report['9_prod'] = (df_report['l2_prod__que7_ans1']==df_report['l3_prod__que7_ans1'])
+            df_report['10_prod'] = (df_report['l2_prod__que8_ans1']==df_report['l3_prod__que8_ans1'])
+            df_report['11_prod'] = (df_report['l2_prod__que9_ans1']==df_report['l3_prod__que9_ans1'])
+            df_report['12_prod'] = (df_report['l2_prod__que10_ans1']==df_report['l3_prod__que10_ans1'])
+            df_report['13_prod'] = (df_report['l2_prod__que11_ans1']==df_report['l3_prod__que11_ans1'])
+            df_report['14_prod'] = (df_report['l2_prod__q12_ans1']==df_report['l3_prod__q12_ans1'])
+            df_report['15_prod'] = (df_report['l2_prod__que4_ans2']==df_report['l3_prod__que4_ans2'])
+            df_report['16_prod'] = (df_report['l2_prod__que5_ans2']==df_report['l3_prod__que5_ans2'])
+            df_report['17_prod'] = (df_report['l2_prod__que6_ans2']==df_report['l3_prod__que6_ans2'])
+            df_report['18_prod'] = (df_report['l2_prod__que7_ans2']==df_report['l3_prod__que7_ans2'])
+            df_report['19_prod'] = (df_report['l2_prod__que8_ans2']==df_report['l3_prod__que8_ans2'])
+            df_report['20_prod'] = (df_report['l2_prod__que9_ans2']==df_report['l3_prod__que9_ans2'])
+            df_report['21_prod'] = (df_report['l2_prod__que10_ans2']==df_report['l3_prod__que10_ans2'])
+            df_report['22_prod'] = (df_report['l2_prod__que11_ans2']==df_report['l3_prod__que11_ans2'])
+            df_report['23_prod'] = (df_report['l2_prod__q12_ans2']==df_report['l3_prod__q12_ans2'])
+            
+
+            columns_to_remove = [
+                'l1_status', 'l2_status', 'l4_status', 'l3_status', 'l1_l2_accuracy',
+                'l1_prod__que1', 'l1_prod__que2', 'l1_prod__que2_1', 'l1_prod__que3',
+                'l1_prod__is_present_both', 'l1_prod__que4_ans1', 'l1_prod__que5_ans1',
+                'l1_prod__que6_ans1', 'l1_prod__que7_ans1', 'l1_prod__que8_ans1',
+                'l1_prod__que9_ans1', 'l1_prod__que10_ans1', 'l1_prod__que11_ans1',
+                'l1_prod__q12_ans1', 'l1_prod__que4_ans2', 'l1_prod__que5_ans2',
+                'l1_prod__que6_ans2', 'l1_prod__que7_ans2', 'l1_prod__que8_ans2',
+                'l1_prod__que9_ans2', 'l1_prod__que10_ans2', 'l1_prod__que11_ans2',
+                'l1_prod__q12_ans2', 'l2_prod__que1', 'l2_prod__que2', 'l2_prod__que2_1',
+                'l2_prod__que3', 'l2_prod__is_present_both', 'l2_prod__que4_ans1',
+                'l2_prod__que5_ans1', 'l2_prod__que6_ans1', 'l2_prod__que7_ans1',
+                'l2_prod__que8_ans1', 'l2_prod__que9_ans1', 'l2_prod__que10_ans1',
+                'l2_prod__que11_ans1', 'l2_prod__q12_ans1', 'l2_prod__que4_ans2',
+                'l2_prod__que5_ans2', 'l2_prod__que6_ans2', 'l2_prod__que7_ans2',
+                'l2_prod__que8_ans2', 'l2_prod__que9_ans2', 'l2_prod__que10_ans2',
+                'l2_prod__que11_ans2', 'l2_prod__q12_ans2', 'l3_prod__que1',
+                'l3_prod__que2', 'l3_prod__que2_1', 'l3_prod__que3', 'l3_prod__is_present_both',
+                'l3_prod__que4_ans1', 'l3_prod__que5_ans1', 'l3_prod__que6_ans1',
+                'l3_prod__que7_ans1', 'l3_prod__que8_ans1', 'l3_prod__que9_ans1',
+                'l3_prod__que10_ans1', 'l3_prod__que11_ans1', 'l3_prod__q12_ans1',
+                'l3_prod__que4_ans2', 'l3_prod__que5_ans2', 'l3_prod__que6_ans2',
+                'l3_prod__que7_ans2', 'l3_prod__que8_ans2', 'l3_prod__que9_ans2',
+                'l3_prod__que10_ans2', 'l3_prod__que11_ans2', 'l3_prod__q12_ans2','l1_emp__employeeID','l1_emp__employeeName','l1_loc'
+            ]
+
+            df_report = df_report.drop(columns=columns_to_remove)
+
+            new_column_names = {'l2_emp__employeeID': 'Employee_id', 'l2_emp__employeeName': 'Employee_Name','l2_loc':'Location'}
+
+            df_report.rename(columns=new_column_names, inplace=True)
+
+            df_report['Audited_count'] = df_report.apply(lambda row: row[:-2].eq(True).sum(), axis=1)
+
+
+            df_report['Total_error'] = df_report.apply(lambda row: row[:-2].eq(False).sum(), axis=1)
+
+            df_report['Field_count'] = df_report['Audited_count']*25
+
+            df_report['Audited_count_wise_accuracy'] = (1 - (df_report['Total_error'] / df_report['Audited_count']))*100
+
+            df_report['field_count_wise_accuracy'] = (1 - (df_report['Total_error'] / df_report['Field_count']))*100
+
+            return df_report
+
+
+
+
+#############################################################################################################################################
+
+
+{% extends "layouts/base.html" %}
+{% load static %}
+{% block title %} {% endblock %}
+
+<!-- Specific CSS goes HERE -->
+{% block stylesheets %}
+
+{% endblock stylesheets %}
+{% block content %}
+{% load tags %}
+<div class="grid-margin">
+    <div class="card shadow">
+        <div class="card-body">
+            <div class="row">
+                <div class="col-md-12 col-sm-12">
+                    <form class="row mb-2" action="{% url 'qualityreport' %}" method="POST">
+                        <input type="text" name="key" id="key" value="GetItem" style="display: none;">
+                        {% csrf_token %}
+
+
+                        <div class="col-md-2 col-sm-12">
+                            <label for="fromdate">From Date</label>
+                           
+                                <input type="date" name="fromdate" id="fromdate" class="form-control"
+                                    placeholder="From Date" required>
+                           
+                        </div>
+
+                        <div class="col-md-2 col-sm-12">
+                            <label for="todate">To Date</label>
+
+                                <input type="date" name="todate" id="todate" class="form-control"
+                                    placeholder="From Date" required>
+                           
+                        </div>
+
+                        <div class="col-md-2 col-sm-12">
+                            <label for="">language</label>
+
+                            <select class="form-control select-form" name="language" id="language"
+                                style="border: 1px solid black;color: black;" required>
+                                <option value="">-- select --</option>
+                                <option value="ALL">ALL</option>
+                                {% for f in language %}
+                                <option value="{{ f}}">{{ f}}</option>
+                                {% endfor %}                                
+                            </select>
+                        </div>
+
+                        <div class="col-md-2 col-sm-12">
+                            <label for="">File Name</label>
+
+                            <select class="form-control select-form" name="filename" id="filename"
+                                style="border: 1px solid black;color: black;" required>
+                                <option value="">-- select --</option>
+                                <option value="ALL">ALL</option>
+                                {% for f in filenames %}
+                                <option value="{{ f.baseid_id__filename}}">{{ f.baseid_id__filename}}</option>
+                                {% endfor %}                                
+                            </select>
+                        </div>
+                        <div class="col-md-2 col-sm-12">
+                            <label for="">Location</label>
+                            <select name="location" id="location" style="border: 1px solid black;color: black;"
+                                class="form-control select-form" required>
+                                <option value="">-- select --</option>
+                                <option value="ALL">ALL</option>
+                                {% for l in locations %}
+                                <option value="{{ l.location}}">{{ l.location}}</option>
+                                {% endfor %}
+                            </select>
+                        </div>           
+                        
+                        <div class="col-md-2 col-sm-12">
+                            <label for="">Scope </label>
+                            <select name="scope" id="scope" style="border: 1px solid black;color: black;"
+                                class="form-control select-form" required>
+                                <option value="">-- select --</option>
+                                <option value="ALL">ALL</option>
+                                <option value="DA1">DA1</option>
+                                <option value="DA2">DA2</option>
+                            </select>
+                        </div>  
+                        
+                        <div class="col-md-2 col-sm-12">
+                            <label for="">form</label>
+                            <select name="options" id="options" style="border: 1px solid black;color: black;"
+                                class="form-control select-form" required>
+                                <option value="">-- select --</option>
+                                <option value="FIELD">FIELD WISE</option>
+                                <option value="USER">USER WISE</option>
+                            </select>
+                        </div>  
+
+
+                        <div class="col-md-2 col-sm-12">
+                            <div class="mt-4">
+                                <button class="btn btn-sm btn-success" id="storebtn">Get</button>
+                            </div>
+                        </div>
+                    </form>
+                    <div class="col-md-2 col-sm-12">
+                        <div class="mt-4">
+                            <button  id="submitBtn" class="btn btn-info">Download as csv</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    <br>
+  
+    <div class="card shadow-sm">
+        <div class="card-body">
+            <div class="table-responsive" style="overflow-y: scroll;max-height: 65vh;">
+                {% if response_data_list %}
+                <table class="table table-hover">
+                    <thead>
+                        <tr>
+                            <th>S.No</th>
+                            <th>Date</th>
+                            <th>Employee id</th>
+                            <th>Employee Name</th>
+                            <th>Audited Count</th>
+                            <th>Field count</th>
+                            <th>Total error count</th>
+                            <th>Acdited count with accuracy</th>
+                            <th>Field wise accuracy</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for data_dict in response_data_list %}
+                            {% if data_dict %}
+                                <tr>
+                                    <td>{{ forloop.counter }}</td>
+                                    
+                                    <td>{{ data_dict.PRODUCTION }}</td>
+                                    <td>{{ data_dict.Employee_id }}</td>
+                                    <td>{{ data_dict.Employee_Name }}</td>
+                                    <td>{{ data_dict.Location }}</td>
+                                    <td>{{ data_dict.Audited_count }}</td>
+                                    <td>{{ data_dict.Field_count }}</td>
+                                    <td>{{ data_dict.Audited_count_wise_accuracy }}</td>
+                                    <td>{{ data_dict.field_count_wise_accuracy }}</td>
+    
+                                </tr>
+                            {% endif %}
+                        {% endfor %}
+                    </tbody>
+                </table>
+                {% endif %}
+                {% if data_list2 %}
+                    <table class="table table-hover">
+                        <thead>
+                            <tr>
+                                <th>S.No</th>
+                                <th>Questions</th>
+                                <th>Audited_count</th>
+                                <th>Total_error</th>
+                                <th>Field_count</th>
+                                <th>Audited_count_wise_accuracy</th>
+                                <th>field_count_wise_accuracy</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for data_dict in data_list2 %}
+                                {% if data_dict %}
+                                    <tr>
+                                        <td>{{ forloop.counter }}</td>    
+                                        <td>{{ data_dict.PRODUCTION }}</td>
+                                        <td>{{ data_dict.Audited_count }}</td>
+                                        <td>{{ data_dict.Total_error }}</td>
+                                        <td>{{ data_dict.Field_count }}</td>
+                                        <td>{{ data_dict.Audited_count_wise_accuracy }}</td>
+                                        <td>{{ data_dict.field_count_wise_accuracy }}</td>
+                                    </tr>
+                                {% endif %}
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+   
+</div>
+<script src="{% static 'js/jquery_plugin.js' %}"></script>
+<!-- Add this in the <head> section of your HTML -->
+    <script src="https://code.jquery.com/jquery-3.6.4.min.js"></script>
+
+<script>
+    $("#storebtn").click(function () {
+        localStorage.setItem('from', $("#fromdate").val());
+        localStorage.setItem('to', $("#todate").val());
+        localStorage.setItem('language', $("#language").val());
+        localStorage.setItem('filename_q', $("#filename").val());
+        localStorage.setItem('location_q', $("#location").val());
+        localStorage.setItem('scope_q', $("#scope").val());
+        localStorage.setItem('options', $("#options").val());
+    })
+
+    $("#submitBtn").click(function () {
+        
+        var formData = {
+            csrfmiddlewaretoken:'{{ csrf_token }}',
+            fromdate: localStorage.getItem('from'),
+            todate: localStorage.getItem('to'),
+            language: localStorage.getItem('language'),
+            filename: localStorage.getItem('filename_q'),
+            location: localStorage.getItem('location_q'),
+            scope: localStorage.getItem('scope_q'),
+            options: localStorage.getItem('options'),
+            key: "Download"
+        };
+
+        // Send AJAX request
+        $.ajax({
+            type: "POST",
+            url: "/api/v5/qualityreport/",
+            data: formData,
+            // dataType: 'json',
+            success: function (response) {
+                var a = document.createElement('a');
+                a.href = 'data:attachment/csv,' + encodeURI(response);
+                a.target = '_blank';
+                a.download = 'template.csv';
+                document.body.appendChild(a);
+                a.click();
+                document.body.removeChild(a);
+            },
+            error: function (error) {
+                console.log(error);
+            }
+        });           
+    });
+   
+</script>
+
+{% endblock content %}
